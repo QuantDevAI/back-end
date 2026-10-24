@@ -1,0 +1,16 @@
+spring:
+  flyway:
+    # db/seed só existe no perfil dev: amostra de filmes para testar sem o ETL.
+    locations: classpath:db/migration,classpath:db/seed
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET:filmae-dev-shared-jwt-secret-change-me-0123456789abcdefghijklmnopqrstuvwxyz}
+
+logging:
+  level:
+    com.filmae: DEBUG
+    org.springframework.security: INFO

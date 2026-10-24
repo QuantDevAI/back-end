@@ -1,0 +1,19 @@
+spring:
+  flyway:
+    locations: classpath:db/migration
+  datasource:
+    hikari:
+      maximum-pool-size: 4
+      minimum-idle: 1
+
+jwt:
+  secret: filmae-test-shared-jwt-secret-only-for-tests-0123456789abcdefghijklmnopqrstuvwxyz
+
+auth-service:
+  base-url: http://localhost:18081
+
+logging:
+  level:
+    root: WARN
+    com.filmae: INFO
+    org.testcontainers: WARN

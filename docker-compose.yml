@@ -1,0 +1,85 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: filmae-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      FILMAE_DB_PASSWORD: ${FILMAE_DB_PASSWORD:-filmae_password}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:-auth_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d filmae_db && pg_isready -U ${POSTGRES_USER:-postgres} -d auth_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - filmae-network
+
+  auth-service:
+    build:
+      context: ../auth-microservice
+      dockerfile: Dockerfile
+    container_name: filmae-auth-service
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_service_db
+      SPRING_DATASOURCE_USERNAME: auth_user
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD:-auth_password}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET (>= 64 bytes) no .env}
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - filmae-network
+    restart: unless-stopped
+
+  back-end:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: filmae-back-end
+    environment:
+      SPRING_PROFILES_ACTIVE: ${BACKEND_PROFILE:-dev}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/filmae_db
+      DATABASE_USERNAME: filmae_user
+      DATABASE_PASSWORD: ${FILMAE_DB_PASSWORD:-filmae_password}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET (>= 64 bytes) no .env}
+      AUTH_SERVICE_BASE_URL: http://auth-service:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - filmae-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  filmae-network:
+    driver: bridge

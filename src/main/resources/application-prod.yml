@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+server:
+  compression:
+    enabled: true
+    min-response-size: 1024
+
+jwt:
+  secret: ${JWT_SECRET}
+
+auth-service:
+  base-url: ${AUTH_SERVICE_BASE_URL}
+
+app:
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:https://*.filmae.app}
+
+logging:
+  level:
+    root: WARN
+    com.filmae: INFO
